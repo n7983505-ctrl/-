@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тренажёр по математике: Операции над множествами</title>
+<style>
+  :root{
+    --bg:#eef2fb;
+    --card:#ffffff;
+    --ink:#1b2a4a;
+    --muted:#64748b;
+    --accent:#3b5bdb;
+    --accent-soft:#e3e9ff;
+    --ok:#2f9e44;
+    --err:#e03131;
+    --line:#dbe1ef;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+    background:linear-gradient(180deg,#eef2fb 0%,#f8fafd 100%);
+    color:var(--ink);
+    min-height:100vh;
+    padding-bottom:70px;
+  }
+  .wrap{max-width:900px;margin:0 auto;padding:0 18px;}
+
+  header{text-align:center;padding:30px 0 14px;}
+  h1{font-size:clamp(20px,3.3vw,30px);margin:0 0 8px;letter-spacing:-.01em;}
+  .subtitle{color:var(--muted);margin:0;font-size:15px;}
+
+  /* ---------- HUD ---------- */
+  .hud{
+    position:sticky;top:0;z-index:30;
+    background:rgba(255,255,255,.94);
+    backdrop-filter:blur(8px);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:12px 16px 10px;
+    box-shadow:0 6px 22px rgba(27,42,74,.07);
+    margin-bottom:20px;
+  }
+  .hud-row{display:flex;gap:18px;align-items:center;flex-wrap:wrap;justify-content:space-between;}
+  .hud-item{font-size:13.5px;color:var(--muted);white-space:nowrap;}
+  .hud-item b{color:var(--ink);font-size:16px;font-variant-numeric:tabular-nums;}
+  #timer.low{color:var(--err);}
+  .bar{height:6px;border-radius:6px;background:#e6ebf7;margin-top:10px;overflow:hidden;}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4c6ef5,#748ffc);transition:width .35s;}
+
+  /* ---------- Cards ---------- */
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:22px;
+    box-shadow:0 8px 26px rgba(27,42,74,.06);
+    margin-bottom:18px;
+  }
+
+  /* ---------- Start screen ---------- */
+  .start-rules{list-style:none;padding:0;margin:0 0 18px;}
+  .start-rules li{padding:8px 0 8px 30px;position:relative;color:#33415c;font-size:15.5px;line-height:1.5;}
+  .start-rules li::before{content:"◆";position:absolute;left:6px;color:var(--accent);font-size:12px;top:11px;}
+
+  .btn{
+    font-family:inherit;font-size:16px;font-weight:600;
+    padding:13px 26px;border-radius:12px;border:none;cursor:pointer;
+    background:linear-gradient(135deg,#3b5bdb,#5c7cfa);
+    color:#fff;box-shadow:0 6px 18px rgba(59,91,219,.28);
+    transition:transform .12s, box-shadow .12s;
+  }
+  .btn:hover{transform:translateY(-1px);box-shadow:0 9px 22px rgba(59,91,219,.34);}
+  .btn.ghost{
+    background:#fff;color:var(--accent);border:2px solid var(--accent);
+    box-shadow:none;font-weight:600;
+  }
+  .btn.ghost:hover{background:var(--accent-soft);}
+  .btn:disabled{opacity:.45;cursor:default;transform:none;box-shadow:none;}
+
+  /* ---------- Theory ---------- */
+  details.theory{
+    border:1px solid var(--line);border-radius:16px;background:#fff;
+    margin-bottom:18px;overflow:hidden;
+  }
+  details.theory summary{
+    cursor:pointer;padding:14px 18px;font-weight:600;font-size:15.5px;
+    background:#f6f8ff;color:#2b3a67;list-style:none;
+  }
+  details.theory summary::-webkit-details-marker{display:none;}
+  details.theory summary::before{content:"📘 ";}
+  details.theory[open] summary{border-bottom:1px solid var(--line);}
+  .theory-body{padding:16px 18px 6px;}
+  .theory-item{display:flex;gap:16px;align-items:center;padding:10px 0;border-bottom:1px dashed #e8edf8;}
+  .theory-item:last-child{border-bottom:none;}
+  .theory-item .txt{flex:1;font-size:14.5px;line-height:1.55;color:#33415c;}
+  .theory-item .txt b{color:var(--ink);}
+  .theory-mini{width:130px;flex-shrink:0;}
+  .theory-mini svg{width:100%;height:auto;display:block;}
+
+  /* ---------- Question ---------- */
+  .q-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;}
+  .badge{
+    font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--accent);background:var(--accent-soft);padding:5px 11px;border-radius:20px;
+  }
+  .prompt{font-size:17px;line-height:1.6;margin-bottom:16px;}
+  .diagram{margin:0 auto 18px;max-width:420px;}
+  .diagram svg{width:100%;height:auto;display:block;}
+
+  .options{display:grid;gap:11px;}
+  .options.list{grid-template-columns:1fr;}
+  .options.grid{grid-template-columns:repeat(2,1fr);}
+  @media(max-width:600px){.options.grid{grid-template-columns:1fr;}}
+
+  .option{
+    font-family:inherit;font-size:16px;color:var(--ink);
+    text-align:left;padding:14px 16px;border:2px solid var(--line);border-radius:13px;
+    background:#fff;cursor:pointer;transition:all .15s;
+  }
+  .option:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft);}
+  .option:disabled{cursor:default;}
+  .option.reveal{border-color:var(--ok);background:#eaf8ee;}
+  .option.chosen-bad{border-color:var(--err);background:#fdeeee;}
+  .option.chosen-ok{border-color:var(--ok);background:#eaf8ee;box-shadow:0 0 0 3px rgba(47,158,68,.14);}
+  .option-svg{padding:6px;}
+  .option-svg svg{width:100%;height:auto;display:block;}
+
+  .m{font-family:Georgia,'Times New Roman',serif;}
+
+  .feedback,.hint-box{
+    margin-top:14px;padding:13px 16px;border-radius:12px;font-size:15px;line-height:1.55;display:none;
+  }
+  .feedback.show,.hint-box.show{display:block;}
+  .feedback.ok{background:#eaf8ee;border-left:4px solid var(--ok);}
+  .feedback.err{background:#fdeeee;border-left:4px solid var(--err);}
+  .hint-box{background:#fff8e6;border-left:4px solid #f0a500;}
+
+  .actions{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap;align-items:center;}
+
+  /* ---------- Result ---------- */
+  .result-score{font-size:52px;font-weight:800;line-height:1;margin:6px 0 4px;color:var(--accent);}
+  .result-sub{color:var(--muted);font-size:15px;margin-bottom:20px;}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:20px 0;}
+  .stat{background:#f6f8ff;border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center;}
+  .stat .v{font-size:22px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;}
+  .stat .k{font-size:12.5px;color:var(--muted);margin-top:4px;letter-spacing:.02em;}
+  .review{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .dot{
+    width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;border:2px solid transparent;
+  }
+  .dot.y{background:#eaf8ee;color:var(--ok);border-color:#bfe6c9;}
+  .dot.n{background:#fdeeee;color:var(--err);border-color:#f3c7c7;}
+
+  footer{
+    text-align:center;color:var(--muted);font-size:13.5px;padding:26px 18px 10px;line-height:1.7;
+    border-top:1px solid var(--line);margin-top:26px;
+  }
+  footer b{color:var(--ink);}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <h1>Операции над множествами</h1>
+    <p class="subtitle">Интерактивный тренажёр · диаграммы Эйлера-Венна · объединение, пересечение, разность</p>
+  </header>
+
+  <!-- ================= HUD ================= -->
+  <div class="hud" id="hud" hidden>
+    <div class="hud-row">
+      <div class="hud-item">⏱ Время: <b id="timer">20:00</b></div>
+      <div class="hud-item">⭐ Баллы: <b id="score">0</b> / <b id="maxScore">12</b></div>
+      <div class="hud-item">Вопрос <b id="qnum">1</b> из <b id="qtotal">12</b></div>
+    </div>
+    <div class="bar"><i id="progress"></i></div>
+  </div>
+
+  <!-- ================= START ================= -->
+  <section id="startScreen" class="card">
+    <h2 style="margin:0 0 12px;font-size:19px;">Как устроен тренажёр</h2>
+    <ul class="start-rules">
+      <li>Вам будет предложено <b>12 заданий</b> по теме «Операции над множествами»: объединение (A ∪ B), пересечение (A ∩ B) и разность (A \ B).</li>
+      <li>На выполнение всей работы отводится <b>20 минут</b>. Таймер запускается сразу после нажатия кнопки «Начать тренировку».</li>
+      <li>За каждый верный ответ начисляется <b>1 балл</b>. Максимум — 12 баллов.</li>
+      <li>В любой момент можно открыть блок <b>«Теоретические подсказки»</b> или нажать кнопку <b>«Подсказка»</b> к конкретному заданию (количество использованных подсказок фиксируется в итогах).</li>
+      <li>Ответ принимается один раз — выберите вариант и сразу получите разбор.</li>
+    </ul>
+    <div class="actions">
+      <button class="btn" id="startBtn">Начать тренировку</button>
+    </div>
+  </section>
+
+  <!-- ================= QUIZ ================= -->
+  <section id="quiz" hidden>
+
+    <details class="theory">
+      <summary>Теоретические подсказки (открыть/закрыть)</summary>
+      <div class="theory-body">
+        <div class="theory-item">
+          <div class="txt">
+            <b>Объединение A ∪ B</b> — множество, состоящее из всех элементов, которые принадлежат
+            <i>хотя бы одному</i> из множеств A или B. Каждый элемент записывается в ответ один раз.
+          </div>
+          <div class="theory-mini" id="th-union"></div>
+        </div>
+        <div class="theory-item">
+          <div class="txt">
+            <b>Пересечение A ∩ B</b> — множество, состоящее из всех тех и только тех элементов,
+            которые принадлежат <i>одновременно</i> и множеству A, и множеству B.
+          </div>
+          <div class="theory-mini" id="th-inter"></div>
+        </div>
+        <div class="theory-item">
+          <div class="txt">
+            <b>Разность A \ B</b> — множество всех тех и только тех элементов множества A,
+            которые <i>не содержатся</i> в множестве B. Обратите внимание: B \ A ≠ A \ B.
+          </div>
+          <div class="theory-mini" id="th-diff"></div>
+        </div>
+        <div class="theory-item">
+          <div class="txt">
+            <b>Диаграммы Эйлера-Венна.</b> Универсальное множество U изображается прямоугольником,
+            а множества — замкнутыми фигурами (кругами) внутри него. Заштрихованная область —
+            это результат операции. Полезная формула для мощностей:
+            |A ∪ B| = |A| + |B| − |A ∩ B|.
+          </div>
+          <div class="theory-mini" id="th-all"></div>
+        </div>
+      </div>
+    </details>
+
+    <div class="card">
+      <div class="q-head">
+        <span class="badge" id="qtype">Задание</span>
+      </div>
+      <div class="prompt" id="prompt"></div>
+      <div class="diagram" id="diagram"></div>
+      <div class="options list" id="options"></div>
+      <div class="hint-box" id="hintBox"></div>
+      <div class="feedback" id="feedback"></div>
+      <div class="actions">
+        <button class="btn ghost" id="hintBtn">💡 Подсказка</button>
+        <button class="btn" id="nextBtn" style="display:none;">Следующее задание</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= RESULT ================= -->
+  <section id="result" hidden>
+    <div class="card">
+      <div class="result-score" id="resScore">0 / 12</div>
+      <div class="result-sub" id="resMsg"></div>
+
+      <div class="stats">
+        <div class="stat"><div class="v" id="resPercent">0%</div><div class="k">Процент выполнения</div></div>
+        <div class="stat"><div class="v" id="resTime">00:00</div><div class="k">Затраченное время</div></div>
+        <div class="stat"><div class="v" id="resHints">0</div><div class="k">Использовано подсказок</div></div>
+        <div class="stat"><div class="v" id="resCorrect">0</div><div class="k">Верных ответов</div></div>
+      </div>
+
+      <div style="font-size:14.5px;color:#33415c;">Карта ответов (зелёный — верно, красный — ошибка):</div>
+      <div class="review" id="review"></div>
+
+      <div class="actions">
+        <button class="btn" id="restartBtn">Пройти заново</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Тренажёр по теме «Операции над множествами и диаграммы Эйлера-Венна»<br>
+    Разработчик: <b>Котова Наталья Юрьевна</b>, преподаватель математики
+  </footer>
+
+</div>
+
+<script>
+/* =========================================================
+   1. ГЕНЕРАТОР ДИАГРАММ ЭЙЛЕРА-ВЕННА (SVG)
+   ========================================================= */
+let uidCounter = 0;
+
+function masksFor(fn, n) {
+  const res = [];
+  for (let m = 0; m < (1 << n); m++) {
+    if (fn(!!(m & 1), !!(m & 2), !!(m & 4))) res.push(m);
+  }
+  return res;
+}
+
+function vennSVG(n, shadedMasks, opts) {
+  opts = opts || {};
+  const uid = 'vv' + (uidCounter++);
+  const W = 360, H = 240;
+  const UR = { x: 8, y: 8, w: 344, h: 224 };
+
+  const circles = (n === 2)
+    ? [ { cx: 140, cy: 120, r: 75 }, { cx: 220, cy: 120, r: 75 } ]
+    : [ { cx: 180, cy: 92,  r: 66 }, { cx: 132, cy: 152, r: 66 }, { cx: 228, cy: 152, r: 66 } ];
+
+  const labels = (n === 2)
+    ? [ [98, 72, 'A'], [262, 72, 'B'] ]
+    : [ [180, 50, 'A'], [100, 192, 'B'], [260, 192, 'C'] ];
+
+  let defs = '';
+  circles.forEach((c, i) => {
+    defs += '<clipPath id="' + uid + '_c' + i + '">' +
+              '<circle cx="' + c.cx + '" cy="' + c.cy + '" r="' + c.r + '"/>' +
+            '</clipPath>';
+  });
+
+  const shadeFill = opts.fill || '#a9c1ff';
+  let shade = '';
+
+  shadedMasks.forEach(m => {
+    const inIdx = [], notIdx = [];
+    for (let i = 0; i < n; i++) {
+      if (m & (1 << i)) inIdx.push(i); else notIdx.push(i);
+    }
+    const maskId = uid + '_m' + m;
+
+    defs += '<mask id="' + maskId + '" maskUnits="userSpaceOnUse" x="0" y="0" width="' + W + '" height="' + H + '">' +
+              '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="#ffffff"/>' +
+              notIdx.map(i =>
+                '<circle cx="' + circles[i].cx + '" cy="' + circles[i].cy +
+                '" r="' + circles[i].r + '" fill="#000000"/>').join('') +
+            '</mask>';
+
+    inIdx.forEach(i => { shade += '<g clip-path="url(#' + uid + '_c' + i + ')">'; });
+    shade += '<rect x="' + UR.x + '" y="' + UR.y + '" width="' + UR.w + '" height="' + UR.h +
+             '" fill="' + shadeFill + '" mask="url(#' + maskId + ')"/>';
+    inIdx.forEach(() => { shade += '</g>'; });
+  });
+
+  let body = '<rect x="' + UR.x + '" y="' + UR.y + '" width="' + UR.w + '" height="' + UR.h +
+             '" rx="6" fill="#ffffff" stroke="#94a3c4" stroke-width="2"/>';
+  body += shade;
+  circles.forEach(c => {
+    body += '<circle cx="' + c.cx + '" cy="' + c.cy + '" r="' + c.r +
+            '" fill="none" stroke="#33406b" stroke-width="2"/>';
+  });
+  labels.forEach(l => {
+    body += '<text x="' + l[0] + '" y="' + l[1] + '" text-anchor="middle" ' +
+            'font-family="Georgia,serif" font-style="italic" font-size="19" fill="#22315a">' + l[2] + '</text>';
+  });
+  body += '<text x="24" y="224" font-family="Georgia,serif" font-style="italic" ' +
+          'font-size="17" fill="#22315a">U</text>';
+
+  return '<svg class="venn-svg" viewBox="0 0 ' + W + ' ' + H + '" ' +
+         'xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">' +
+         '<defs>' + defs + '</defs>' + body + '</svg>';
+}
+
+/* Готовые маски областей */
+const M_UNION2   = masksFor((a,b)=> a || b, 2);        // [1,2,3]
+const M_INTER2   = masksFor((a,b)=> a && b, 2);        // [3]
+const M_DIFF_AB  = masksFor((a,b)=> a && !b, 2);       // [1]
+const M_DIFF_BA  = masksFor((a,b)=> b && !a, 2);       // [2]
+const M_SYM2     = masksFor((a,b)=> a !== b, 2);       // [1,2]
+
+const M_AB_C     = masksFor((a,b,c)=> a && b && !c, 3);       // (A ∩ B) \ C
+const M_UAB_C    = masksFor((a,b,c)=> (a || b) && !c, 3);     // (A ∪ B) \ C
+const M_ABC      = masksFor((a,b,c)=> a && b && c, 3);        // A ∩ B ∩ C
+const M_ABdiff_C = masksFor((a,b,c)=> (a && !b) || c, 3);     // (A \ B) ∪ C
+const M_ALL3     = masksFor((a,b,c)=> a || b || c, 3);
+
+/* =========================================================
+   2. БАНК ЗАДАНИЙ
+   ========================================================= */
+const QUESTIONS = [
+
+  /* --- 1 --- */
+  {
+    type: 'Объединение множеств',
+    prompt: 'Даны множества <span class="m">A = {1, 2, 3, 4, 5}</span> и <span class="m">B = {4, 5, 6, 7}</span>.<br>Найдите объединение <span class="m">A ∪ B</span>.',
+    options: [
+      { text: '{1, 2, 3, 4, 5, 6, 7}', correct: true },
+      { text: '{4, 5}',               correct: false },
+      { text: '{1, 2, 3}',            correct: false },
+      { text: '{1, 2, 3, 6, 7}',      correct: false }
+    ],
+    hint: 'В объединение <b>A ∪ B</b> входят <i>все</i> элементы обоих множеств: и те, что есть только в A, и те, что есть только в B, и общие элементы. Каждый элемент записывается один раз.',
+    explain: 'A ∪ B = {1, 2, 3, 4, 5, 6, 7}. Элементы 4 и 5 принадлежат обоим множествам, но в объединении указываются только один раз.'
+  },
+
+  /* --- 2 --- */
+  {
+    type: 'Пересечение множеств',
+    prompt: 'Даны множества <span class="m">A = {2, 4, 6, 8, 10}</span> и <span class="m">B = {4, 6, 8, 12}</span>.<br>Найдите пересечение <span class="m">A ∩ B</span>.',
+    options: [
+      { text: '{4, 6, 8}',              correct: true },
+      { text: '{2, 4, 6, 8, 10, 12}',   correct: false },
+      { text: '{2, 10}',                correct: false },
+      { text: '{2, 10, 12}',            correct: false }
+    ],
+    hint: 'В пересечение <b>A ∩ B</b> попадают только те элементы, которые есть <i>одновременно</i> и в A, и в B.',
+    explain: 'Общими для двух множеств являются числа 4, 6 и 8, поэтому A ∩ B = {4, 6, 8}.'
+  },
+
+  /* --- 3 --- */
+  {
+    type: 'Разность множеств',
+    prompt: 'Даны множества <span class="m">A = {1, 2, 3, 4, 5, 6}</span> и <span class="m">B = {4, 5, 6, 7, 8}</span>.<br>Найдите разность <span class="m">A \\ B</span>.',
+    options: [
+      { text: '{1, 2, 3}',         correct: true },
+      { text: '{7, 8}',            correct: false },
+      { text: '{4, 5, 6}',         correct: false },
+      { text: '{1, 2, 3, 7, 8}',   correct: false }
+    ],
+    hint: 'Разность <b>A \\ B</b> — это элементы, которые принадлежат <i>множеству A</i>, но <i>не принадлежат</i> множеству B. Множество B здесь «вычитается» из A.',
+    explain: 'Из множества A убираем элементы 4, 5, 6, принадлежащие B. Остаётся A \\ B = {1, 2, 3}.'
+  },
+
+  /* --- 4 --- */
+  {
+    type: 'Диаграмма → формула',
+    prompt: 'На диаграмме Эйлера-Венна заштрихована некоторая область.<br>Какая формула ей соответствует?',
+    svg: vennSVG(2, M_INTER2),
+    options: [
+      { text: 'A ∩ B', correct: true },
+      { text: 'A ∪ B', correct: false },
+      { text: 'A \\ B', correct: false },
+      { text: 'B \\ A', correct: false }
+    ],
+    hint: 'Заштрихована «общая» часть двух кругов — та, где выполняются сразу оба условия: элемент принадлежит и A, и B.',
+    explain: 'Заштрихована область пересечения — множество элементов, принадлежащих одновременно A и B. Это A ∩ B.'
+  },
+
+  /* --- 5 --- */
+  {
+    type: 'Диаграмма → формула',
+    prompt: 'На диаграмме Эйлера-Венна заштрихована некоторая область.<br>Какая формула ей соответствует?',
+    svg: vennSVG(2, M_SYM2),
+    options: [
+      { text: '(A \\ B) ∪ (B \\ A)', correct: true },
+      { text: 'A ∩ B',               correct: false },
+      { text: 'A ∪ B',               correct: false },
+      { text: 'A \\ B',              correct: false }
+    ],
+    hint: 'Заштрихованы обе «лунки» — элементы, принадлежащие либо только A, либо только B, но не обоим множествам сразу.',
+    explain: 'Такая область называется симметрической разностью и записывается как (A \\ B) ∪ (B \\ A) — элементы, входящие ровно в одно из двух множеств.'
+  },
+
+  /* --- 6 --- */
+  {
+    type: 'Формула → диаграмма',
+    prompt: 'Выберите диаграмму, на которой заштриховано множество <span class="m">A ∪ B</span>.',
+    options: [
+      { svg: vennSVG(2, M_UNION2),  correct: true  },
+      { svg: vennSVG(2, M_INTER2),  correct: false },
+      { svg: vennSVG(2, M_DIFF_AB), correct: false },
+      { svg: vennSVG(2, M_DIFF_BA), correct: false }
+    ],
+    hint: 'Объединение <b>A ∪ B</b> — это вся «сумма» кругов: закрашиваются оба круга целиком, включая их общую часть.',
+    explain: 'A ∪ B — это все элементы, принадлежащие хотя бы одному из множеств, поэтому заштрихованы оба круга полностью.'
+  },
+
+  /* --- 7 --- */
+  {
+    type: 'Формула → диаграмма',
+    prompt: 'Выберите диаграмму, на которой заштриховано множество <span class="m">B \\ A</span>.',
+    options: [
+      { svg: vennSVG(2, M_DIFF_BA), correct: true  },
+      { svg: vennSVG(2, M_DIFF_AB), correct: false },
+      { svg: vennSVG(2, M_INTER2),  correct: false },
+      { svg: vennSVG(2, M_UNION2),  correct: false }
+    ],
+    hint: 'Разность <b>B \\ A</b> — это часть круга B, которая не попала внутрь круга A. Порядок букв важен: вычитаем именно A.',
+    explain: 'B \\ A — элементы множества B, не принадлежащие A, то есть «левая лунка» круга B.'
+  },
+
+  /* --- 8 --- */
+  {
+    type: 'Диаграмма → формула (3 множества)',
+    prompt: 'На диаграмме изображены три множества <span class="m">A</span>, <span class="m">B</span> и <span class="m">C</span>.<br>Какая формула соответствует заштрихованной области?',
+    svg: vennSVG(3, M_AB_C),
+    options: [
+      { text: '(A ∩ B) \\ C', correct: true },
+      { text: 'A ∩ B ∩ C',    correct: false },
+      { text: '(A ∪ B) \\ C', correct: false },
+      { text: '(A \\ B) ∩ C', correct: false }
+    ],
+    hint: 'Заштрихованная область лежит внутри и A, и B (значит, пересечение A ∩ B), но вне круга C. «Вне C» означает вычитание множества C.',
+    explain: 'Область принадлежит одновременно A и B, но не принадлежит C, поэтому её формула — (A ∩ B) \\ C.'
+  },
+
+  /* --- 9 --- */
+  {
+    type: 'Текстовая задача',
+    prompt: 'В классе 30 учеников. Математический кружок посещают 18 человек, спортивную секцию — 12 человек, а 6 учеников посещают и кружок, и секцию одновременно.<br>Сколько учеников не посещают ни кружок, ни секцию?',
+    options: [
+      { text: '6 учеников',  correct: true },
+      { text: '12 учеников', correct: false },
+      { text: '24 ученика',  correct: false },
+      { text: '0 учеников',  correct: false }
+    ],
+    hint: 'Сначала найдите, сколько учеников посещают хотя бы одно занятие: |A ∪ B| = |A| + |B| − |A ∩ B|. Затем вычтите это число из общего количества учеников.',
+    explain: '|A ∪ B| = 18 + 12 − 6 = 24 ученика посещают хотя бы одно занятие. Тогда нигде не заняты 30 − 24 = 6 учеников.'
+  },
+
+  /* --- 10 --- */
+  {
+    type: 'Мощность объединения',
+    prompt: 'Известно, что <span class="m">|A| = 12</span>, <span class="m">|B| = 9</span>, <span class="m">|A ∩ B| = 4</span>.<br>Найдите мощность объединения <span class="m">|A ∪ B|</span>.',
+    options: [
+      { text: '17', correct: true },
+      { text: '21', correct: false },
+      { text: '25', correct: false },
+      { text: '13', correct: false }
+    ],
+    hint: 'Используйте формулу включений-исключений: <b>|A ∪ B| = |A| + |B| − |A ∩ B|</b>. Общие элементы при простом сложении считаются дважды, поэтому их нужно вычесть.',
+    explain: '|A ∪ B| = 12 + 9 − 4 = 17.'
+  },
+
+  /* --- 11 --- */
+  {
+    type: 'Комбинированная операция',
+    prompt: 'Даны множества:<br><span class="m">A = {1, 2, 3, 4, 5, 6, 7, 8}</span>, <span class="m">B = {3, 4, 7, 8, 9, 10}</span>, <span class="m">C = {0, 4, 5, 6, 9, 10}</span>.<br>Найдите множество <span class="m">M = (A \\ B) ∪ (A ∩ C)</span>.',
+    options: [
+      { text: '{1, 2, 4, 5, 6}',   correct: true },
+      { text: '{1, 2, 5, 6}',      correct: false },
+      { text: '{4, 5, 6}',         correct: false },
+      { text: '{1, 2, 3, 4, 5, 6}',correct: false }
+    ],
+    hint: 'Действуйте по шагам: сначала найдите A \\ B (элементы A, не входящие в B), затем A ∩ C (общие элементы A и C), а потом объедините два полученных множества.',
+    explain: 'A \\ B = {1, 2, 5, 6}; A ∩ C = {4, 5, 6}. Объединяем: (A \\ B) ∪ (A ∩ C) = {1, 2, 4, 5, 6}.'
+  },
+
+  /* --- 12 --- */
+  {
+    type: 'Формула → диаграмма (3 множества)',
+    prompt: 'Выберите диаграмму, на которой заштриховано множество <span class="m">(A ∪ B) \\ C</span>.',
+    options: [
+      { svg: vennSVG(3, M_UAB_C),    correct: true  },
+      { svg: vennSVG(3, M_AB_C),     correct: false },
+      { svg: vennSVG(3, M_ABdiff_C), correct: false },
+      { svg: vennSVG(3, M_ALL3),     correct: false }
+    ],
+    hint: 'Сначала мысленно заштрихуйте A ∪ B (оба круга A и B целиком), а затем уберите из этой области всё, что попало внутрь круга C.',
+    explain: '(A ∪ B) \\ C — это объединение A и B, из которого удалены все элементы множества C. Остаются части A и B, лежащие вне круга C.'
+  }
+];
+
+/* =========================================================
+   3. ЛОГИКА ТРЕНАЖЁРА
+   ========================================================= */
+const TOTAL_TIME = 20 * 60;   // 20 минут
+
+let current = 0;
+let score = 0;
+let hintsUsed = 0;
+let answered = false;
+let timeLeft = TOTAL_TIME;
+let timerId = null;
+let results = [];
+
+const el = id => document.getElementById(id);
+
+/* ---------- Утилиты ---------- */
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function fmt(sec) {
+  sec = Math.max(0, sec);
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+/* ---------- Таймер ---------- */
+function startTimer() {
+  timeLeft = TOTAL_TIME;
+  updateTimer();
+  clearInterval(timerId);
+  timerId = setInterval(() => {
+    timeLeft--;
+    updateTimer();
+    if (timeLeft <= 0) {
+      clearInterval(timerId);
+      finish(true);
+    }
+  }, 1000);
+}
+function updateTimer() {
+  const t = el('timer');
+  t.textContent = fmt(timeLeft);
+  t.classList.toggle('low', timeLeft <= 60);
+}
+
+/* ---------- Отрисовка вопроса ---------- */
+function renderQuestion() {
+  const q = QUESTIONS[current];
+  answered = false;
+
+  el('qnum').textContent = current + 1;
+  el('qtype').textContent = q.type;
+  el('prompt').innerHTML = q.prompt;
+
+  const diag = el('diagram');
+  if (q.svg) { diag.innerHTML = q.svg; diag.style.display = 'block'; }
+  else       { diag.innerHTML = '';    diag.style.display = 'none'; }
+
+  const box = el('options');
+  box.innerHTML = '';
+  const hasSvg = q.options.some(o => o.svg);
+  box.className = 'options ' + (hasSvg ? 'grid' : 'list');
+
+  shuffle(q.options).forEach(o => {
+    const btn = document.createElement('button');
+    btn.className = 'option' + (o.svg ? ' option-svg' : '');
+    btn.innerHTML = o.svg ? o.svg : '<span class="m">' + o.text + '</span>';
+    btn.dataset.correct = o.correct ? 'true' : 'false';
+    btn.addEventListener('click', () => chooseOption(btn, o));
+    box.appendChild(btn);
+  });
+
+  const fb = el('feedback');
+  fb.className = 'feedback';
+  fb.innerHTML = '';
+
+  const hb = el('hintBox');
+  hb.className = 'hint-box';
+  hb.innerHTML = '';
+
+  el('hintBtn').disabled = false;
+  el('nextBtn').style.display = 'none';
+  el('nextBtn').textContent = (current === QUESTIONS.length - 1)
+    ? 'Показать результат'
+    : 'Следующее задание';
+
+  updateProgress();
+}
+
+function updateProgress() {
+  el('progress').style.width = ((current) / QUESTIONS.length * 100) + '%';
+}
+
+/* ---------- Выбор ответа ---------- */
+function chooseOption(btn, opt) {
+  if (answered) return;
+  answered = true;
+
+  const q = QUESTIONS[current];
+  const all = document.querySelectorAll('.option');
+  all.forEach(b => {
+    b.disabled = true;
+    if (b.dataset.correct === 'true') b.classList.add('reveal');
+  });
+
+  if (opt.correct) {
+    score++;
+    btn.classList.add('chosen-ok');
+  } else {
+    btn.classList.add('chosen-bad');
+  }
+  results.push({ n: current + 1, ok: !!opt.correct });
+
+  el('score').textContent = score;
+
+  const fb = el('feedback');
+  fb.className = 'feedback show ' + (opt.correct ? 'ok' : 'err');
+  fb.innerHTML = (opt.correct ? '<b>Верно!</b> ' : '<b>Неверно.</b> ') + q.explain;
+
+  el('hintBtn').disabled = true;
+  el('nextBtn').style.display = 'inline-block';
+}
+
+/* ---------- Подсказка ---------- */
+el('hintBtn').addEventListener('click', () => {
+  const q = QUESTIONS[current];
+  const hb = el('hintBox');
+  if (hb.classList.contains('show')) return;
+  hb.innerHTML = '<b>Подсказка:</b> ' + q.hint;
+  hb.classList.add('show');
+  hintsUsed++;
+  el('hintBtn').disabled = true;
+});
+
+/* ---------- Следующий вопрос ---------- */
+el('nextBtn').addEventListener('click', () => {
+  current++;
+  if (current >= QUESTIONS.length) {
+    finish(false);
+  } else {
+    renderQuestion();
+  }
+});
+
+/* ---------- Старт / финиш ---------- */
+el('startBtn').addEventListener('click', () => {
+  el('startScreen').hidden = true;
+  el('quiz').hidden = false;
+  el('hud').hidden = false;
+  current = 0; score = 0; hintsUsed = 0; results = [];
+  el('score').textContent = '0';
+  el('maxScore').textContent = QUESTIONS.length;
+  el('qtotal').textContent = QUESTIONS.length;
+  renderQuestion();
+  startTimer();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+function finish(byTime) {
+  clearInterval(timerId);
+  el('quiz').hidden = true;
+  el('hud').hidden = true;
+  el('result').hidden = false;
+
+  const total = QUESTIONS.length;
+  const pct = Math.round(score / total * 100);
+  const used = TOTAL_TIME - Math.max(0, timeLeft);
+
+  el('resScore').textContent = score + ' / ' + total;
+  el('resPercent').textContent = pct + '%';
+  el('resTime').textContent = fmt(used);
+  el('resHints').textContent = hintsUsed;
+  el('resCorrect').textContent = score;
+
+  let msg;
+  if (byTime) {
+    msg = '⏰ Время вышло! Результат зафиксирован по уже данным ответам.';
+  } else if (pct >= 90) {
+    msg = '🏆 Отличный результат! Операции над множествами освоены уверенно.';
+  } else if (pct >= 75) {
+    msg = '👍 Хороший результат! Осталось отшлифовать детали.';
+  } else if (pct >= 50) {
+    msg = '📖 Удовлетворительно. Рекомендуется повторить разность множеств и диаграммы Эйлера-Венна.';
+  } else {
+    msg = '📚 Стоит вернуться к теоретическим подсказкам и разобрать примеры заново.';
+  }
+  el('resMsg').textContent = msg;
+
+  const rev = el('review');
+  rev.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const r = results[i];
+    const d = document.createElement('div');
+    d.className = 'dot ' + (r && r.ok ? 'y' : 'n');
+    d.textContent = i + 1;
+    rev.appendChild(d);
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ---------- Рестарт ---------- */
+el('restartBtn').addEventListener('click', () => {
+  el('result').hidden = true;
+  el('startScreen').hidden = false;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+/* =========================================================
+   4. МИНИ-ДИАГРАММЫ В ТЕОРИИ
+   ========================================================= */
+el('th-union').innerHTML = vennSVG(2, M_UNION2);
+el('th-inter').innerHTML = vennSVG(2, M_INTER2);
+el('th-diff').innerHTML  = vennSVG(2, M_DIFF_AB);
+el('th-all').innerHTML   = vennSVG(3, M_ALL3);
+
+/* Инициализация счётчиков */
+el('maxScore').textContent = QUESTIONS.length;
+el('qtotal').textContent = QUESTIONS.length;
+</script>
+</body>
+</html>
